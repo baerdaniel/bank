@@ -1,0 +1,1224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Reference Bank</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #ffffff;
+    --ink: #18171b;
+    --muted: #6f6c67;
+    --faint: #9c9992;
+    --line: #dfdcd4;
+    --accent: #d4d25c;
+    --accent-ink: #18171b;
+    --accent-hover: #e2e195;
+    --danger: #b1432c;
+    --radius: 3px;
+  }
+
+  /* Single, deliberately fixed light theme — white ground throughout, no dark variant. */
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: Verdana, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  ::selection { background: var(--accent); color: var(--accent-ink); }
+
+  a { color: inherit; }
+
+  .mono { font-family: Verdana, sans-serif; }
+
+  /* ---------- shell ---------- */
+  .shell {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    min-height: 100vh;
+    transition: grid-template-columns .2s ease;
+  }
+  .shell[data-sidebar="collapsed"] { grid-template-columns: 0 1fr; }
+  .shell[data-sidebar="collapsed"] .sidebar { opacity: 0; pointer-events: none; }
+  @media (max-width: 860px) {
+    .shell { grid-template-columns: 1fr; }
+    .sidebar { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--line); }
+  }
+
+  .sidebar-toggle {
+    position: fixed;
+    top: 18px; left: 18px;
+    z-index: 25;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+  .sidebar-toggle:hover { color: var(--ink); border-color: var(--faint); }
+
+  /* ---------- sidebar ---------- */
+  .sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow: hidden auto;
+    border-right: 1px solid var(--line);
+    padding: 28px 0 40px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+    transition: opacity .15s ease;
+  }
+  .brand {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .brand-name {
+    font-family: Verdana, sans-serif;
+    font-size: 28px;
+    line-height: 1;
+    text-wrap: balance;
+  }
+  .brand-sub {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  .facet-group { display: flex; flex-direction: column; gap: 10px; }
+  .facet-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--faint);
+    font-weight: 500;
+  }
+  .chip-row { display: flex; flex-direction: column; }
+  .chip {
+    appearance: none;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    border: 1px solid var(--line);
+    border-radius: 0;
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-size: 12.5px;
+    padding: 8px 10px;
+    cursor: pointer;
+    line-height: 1.3;
+    text-align: left;
+    transition: border-color .12s ease, background .12s ease;
+  }
+  .chip + .chip { margin-top: -1px; }
+  .chip:hover { background: var(--accent-hover); border-color: var(--accent-hover); position: relative; z-index: 1; }
+  .chip[data-active="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+    position: relative;
+    z-index: 1;
+  }
+  .chip[data-active="true"]:hover { background: var(--accent); border-color: var(--accent); }
+  .chip .count { color: var(--faint); font-size: 11px; margin-left: 4px; flex: none; }
+  .chip[data-active="true"] .count { color: var(--accent-ink); opacity: .75; }
+  .chip-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .channel-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    padding: 6px 11px;
+  }
+
+  .color-row { display: flex; flex-wrap: wrap; gap: 7px; }
+  .color-dot {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.12);
+    cursor: pointer;
+    position: relative;
+  }
+  .color-dot[data-active="true"] {
+    border: 2px solid var(--accent);
+  }
+
+  .clear-link {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font: inherit;
+    font-size: 12px;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+    padding: 0;
+    align-self: flex-start;
+  }
+  .clear-link:hover { color: var(--ink); }
+
+  .sidebar-foot {
+    margin-top: auto;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    font-size: 11px;
+    color: var(--faint);
+    line-height: 1.5;
+  }
+
+  /* ---------- main ---------- */
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .main-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    padding: 20px 26px 16px;
+  }
+  .main-header .brand-name { font-size: 26px; }
+  .search {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 0;
+    padding: 8px 14px;
+  }
+  .search input {
+    border: none;
+    background: none;
+    outline: none;
+    font: inherit;
+    color: var(--ink);
+    width: 100%;
+    font-size: 13.5px;
+  }
+  .search input::placeholder { color: var(--faint); }
+  .search svg { flex: none; opacity: .6; }
+
+  .sort-select {
+    appearance: none;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    font: inherit;
+    font-size: 13px;
+    padding: 8px 30px 8px 13px;
+    border-radius: 0;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%236f6c67'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 13px center;
+  }
+
+  .shuffle-btn {
+    width: 100%;
+    appearance: none;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-top: none;
+    color: var(--ink);
+    font: inherit;
+    font-size: 13px;
+    padding: 8px 13px;
+    cursor: pointer;
+    text-align: left;
+  }
+  .shuffle-btn:hover { background: var(--surface-2); }
+
+  .moodboard-bar {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 15;
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 26px;
+    font: inherit;
+    cursor: pointer;
+    text-align: left;
+    max-width: 100vw;
+  }
+  .bar-label {
+    flex: none;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  .bar-label span { color: var(--ink); }
+  .bar-thumbs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow-x: auto;
+    flex: 1;
+    min-width: 0;
+  }
+  .bar-thumbs img {
+    width: 40px;
+    height: auto;
+    display: block;
+    flex: none;
+  }
+
+  .result-meta {
+    padding: 14px 26px 4px;
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .result-meta .note { color: var(--faint); }
+
+  .grid {
+    padding: 14px 26px 84px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    align-items: end;
+    row-gap: 80px;
+    column-gap: 2px;
+  }
+  @media (max-width: 700px) {
+    .grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .card {
+    background: none;
+    cursor: pointer;
+    position: relative;
+    display: block;
+    min-width: 0;
+  }
+  .card-img-wrap {
+    position: relative;
+    line-height: 0;
+  }
+  .card-img-wrap img {
+    width: 100%; height: auto;
+    display: block;
+  }
+  .card-add {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    width: 100%;
+    border: none;
+    background: rgba(20,18,15,0.55);
+    color: #fff;
+    padding: 9px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    transition: opacity .12s ease;
+  }
+  .card-img-wrap:hover .card-add,
+  .card-add:focus-visible,
+  .card-add[data-active="true"] { opacity: 1; }
+  .card-add[data-active="true"] { background: var(--accent); color: var(--accent-ink); }
+  .card-color {
+    position: absolute;
+    bottom: 8px; left: 8px;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.7);
+  }
+
+  .empty-state {
+    width: 100%;
+    padding: 90px 20px;
+    text-align: center;
+    color: var(--muted);
+  }
+  .empty-state .big {
+    font-family: Verdana, sans-serif;
+    font-size: 26px;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+
+  /* ---------- basket drawer ---------- */
+  .scrim {
+    position: fixed; inset: 0;
+    background: rgba(10,9,7,0.35);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .18s ease;
+    z-index: 20;
+  }
+  .scrim[data-open="true"] { opacity: 1; pointer-events: auto; }
+
+  .drawer {
+    position: fixed;
+    inset: 0;
+    background: var(--surface);
+    z-index: 21;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .18s ease;
+  }
+  .drawer[data-open="true"] { opacity: 1; visibility: visible; }
+  .drawer-head {
+    padding: 22px 40px 16px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  .drawer-head h2 {
+    font-family: Verdana, sans-serif;
+    font-weight: 400;
+    font-size: 28px;
+    margin: 0;
+  }
+  .drawer-close {
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: 26px; line-height: 1;
+    padding: 4px;
+  }
+  .drawer-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 40px 40px;
+    columns: 240px;
+    column-gap: 20px;
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
+  .basket-item {
+    break-inside: avoid;
+    margin-bottom: 20px;
+    position: relative;
+  }
+  .basket-item img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 2px;
+    background: var(--surface-2);
+  }
+  .basket-item .info {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    padding-top: 7px;
+  }
+  .basket-item .info .t {
+    font-size: 12.5px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .basket-item .info .c {
+    font-size: 11px;
+    color: var(--faint);
+    flex: none;
+  }
+  .basket-item button {
+    background: none; border: none; cursor: pointer;
+    color: var(--faint); font-size: 13px; padding: 4px 0;
+    flex: none;
+  }
+  .basket-item button:hover { color: var(--danger); }
+  .drawer-foot {
+    padding: 16px 40px 22px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+  }
+  .drawer-empty {
+    column-span: all;
+    padding: 90px 20px;
+    text-align: center;
+    color: var(--faint);
+    font-size: 13px;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: none;
+    border-radius: 100px;
+    padding: 11px 16px;
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-secondary {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    border-radius: 100px;
+    padding: 10px 16px;
+    font: inherit;
+    font-size: 12.5px;
+    cursor: pointer;
+  }
+  .toast {
+    position: fixed;
+    bottom: 22px; left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    background: var(--ink);
+    color: var(--bg);
+    padding: 10px 18px;
+    border-radius: 100px;
+    font-size: 12.5px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .15s ease, transform .15s ease;
+    z-index: 30;
+  }
+  .toast[data-show="true"] { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ---------- lightbox ---------- */
+  .lightbox {
+    position: fixed; inset: 0;
+    background: rgba(10,9,7,0.78);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 40;
+    padding: 30px;
+  }
+  .lightbox[data-open="true"] { display: flex; }
+  .lightbox-inner {
+    background: var(--surface);
+    border-radius: 4px;
+    max-width: 920px;
+    width: 100%;
+    max-height: 90vh;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    overflow: hidden;
+  }
+  @media (max-width: 720px) {
+    .lightbox-inner { grid-template-columns: 1fr; overflow-y: auto; }
+  }
+  .lightbox-img {
+    background: var(--surface-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+  }
+  .lightbox-img img { max-width: 100%; max-height: 84vh; object-fit: contain; }
+  .lightbox-meta {
+    padding: 26px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+  }
+  .lightbox-meta h3 {
+    font-family: Verdana, sans-serif;
+    font-weight: 400;
+    font-size: 20px;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .meta-row { display: flex; flex-direction: column; gap: 6px; }
+  .meta-label {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--faint);
+  }
+  .meta-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .meta-tags span {
+    font-size: 11.5px;
+    border: 1px solid var(--line);
+    border-radius: 100px;
+    padding: 3px 9px;
+    color: var(--muted);
+  }
+  .lightbox-close {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: rgba(20,18,15,0.5);
+    color: #fff;
+    border: none;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    z-index: 2;
+  }
+  .lightbox-source {
+    font-size: 12px;
+    color: var(--accent);
+    text-decoration: none;
+    word-break: break-all;
+  }
+  .swatch-inline {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: -1px;
+    border: 1px solid rgba(0,0,0,0.15);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle filters">&laquo;</button>
+<div class="shell" id="shell">
+  <aside class="sidebar">
+    <div class="facet-group">
+      <div class="facet-title">Search</div>
+      <div class="search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="searchInput" type="text" placeholder="Search titles and tags…" />
+      </div>
+    </div>
+
+    <div class="facet-group">
+      <div class="facet-title">Sort</div>
+      <select class="sort-select" id="sortSelect">
+        <option value="newest">Newest added</option>
+        <option value="oldest">Oldest added</option>
+        <option value="channel">By channel</option>
+      </select>
+      <button class="shuffle-btn" id="shuffleBtn" type="button">Shuffle</button>
+    </div>
+
+    <div class="facet-group">
+      <div class="facet-title">Channel</div>
+      <div class="chip-row" id="channelChips"></div>
+    </div>
+
+    <div class="facet-group">
+      <div class="facet-title">Subject</div>
+      <div class="chip-row" id="subjectChips"></div>
+    </div>
+
+    <div class="facet-group">
+      <div class="facet-title">Style</div>
+      <div class="chip-row" id="styleChips"></div>
+    </div>
+
+    <div class="facet-group">
+      <div class="facet-title">Mood</div>
+      <div class="chip-row" id="moodChips"></div>
+    </div>
+
+    <div class="facet-group">
+      <div class="facet-title">Medium</div>
+      <div class="chip-row" id="mediumChips"></div>
+    </div>
+
+    <div class="facet-group">
+      <div class="facet-title">Era</div>
+      <div class="chip-row" id="eraChips"></div>
+    </div>
+
+    <div class="facet-group">
+      <div class="facet-title">Register</div>
+      <div class="chip-row" id="styleRegisterChips"></div>
+    </div>
+
+    <div class="facet-group">
+      <div class="facet-title">Material feel</div>
+      <div class="chip-row" id="materialChips"></div>
+    </div>
+
+    <div class="facet-group">
+      <div class="facet-title">Density</div>
+      <div class="chip-row" id="densityChips"></div>
+    </div>
+
+    <div class="facet-group">
+      <div class="facet-title">Texture</div>
+      <div class="chip-row" id="textureChips"></div>
+    </div>
+
+    <div class="facet-group">
+      <div class="facet-title">Dimension</div>
+      <div class="chip-row" id="dimChips"></div>
+    </div>
+
+    <div class="facet-group">
+      <div class="facet-title">Framing</div>
+      <div class="chip-row" id="framingChips"></div>
+    </div>
+
+    <div class="facet-group">
+      <div class="facet-title">Composition</div>
+      <div class="chip-row" id="compositionChips"></div>
+    </div>
+
+    <div class="facet-group">
+      <div class="facet-title">Color hue</div>
+      <div class="chip-row" id="hueChips"></div>
+    </div>
+
+    <div class="facet-group">
+      <div class="facet-title">Color intensity</div>
+      <div class="chip-row" id="intensityChips"></div>
+    </div>
+
+    <div class="facet-group">
+      <div class="facet-title">Color</div>
+      <div class="color-row" id="colorRow"></div>
+    </div>
+
+    <button class="clear-link" id="clearFilters">Clear all filters</button>
+
+    <div class="sidebar-foot">
+      Synced from 5 are.na channels &mdash; Layout, Beauty, Sculpture, Letters, symbol. Every image is included and tagged automatically (subject, style, mood, taxonomy, dominant color). Images are hotlinked directly from are.na at full resolution. Click any image for a link to the original.
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="main-header">
+      <div class="brand-name">Reference Bank</div>
+    </div>
+
+    <div class="result-meta">
+      <span id="resultCount"></span>
+      <span class="note">Hotlinked from are.na — originals stay on are.na's servers.</span>
+    </div>
+
+    <div class="grid" id="grid"></div>
+  </div>
+</div>
+
+<button class="moodboard-bar" id="moodboardBar" aria-label="Open moodboard">
+  <span class="bar-label mono">Moodboard <span id="barCount">0</span></span>
+  <span class="bar-thumbs" id="barThumbs"></span>
+</button>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="Moodboard selection">
+  <div class="drawer-head">
+    <h2>Moodboard</h2>
+    <button class="drawer-close" id="closeBasket" aria-label="Close">&times;</button>
+  </div>
+  <div class="drawer-list" id="drawerList"></div>
+  <div class="drawer-foot">
+    <button class="btn-primary" id="exportBtn" disabled>Download selection</button>
+    <button class="btn-secondary" id="clearBasket">Clear moodboard</button>
+  </div>
+</aside>
+
+<div class="lightbox" id="lightbox">
+  <div class="lightbox-inner">
+    <button class="lightbox-close" id="lightboxClose">&times;</button>
+    <div class="lightbox-img"><img id="lightboxImg" src="" alt="" /></div>
+    <div class="lightbox-meta" id="lightboxMeta"></div>
+  </div>
+</div>
+
+<div class="toast mono" id="toast"></div>
+
+<script src="data.js"></script>
+<script>
+
+  // Prototype-stage rule: no combining within a facet group — picking a chip in a
+  // group replaces whatever was picked there before. Different groups still combine
+  // with each other (e.g. a Channel choice + a Subject choice can both apply).
+  const MULTI_FIELDS = new Set();
+  const SINGLE_FIELDS = ["channels", "subject", "style", "mood", "texture", "medium", "era", "styleRegister", "material", "density", "dim", "framing", "composition", "hue", "intensity"];
+
+  const state = {
+    channels: null,
+    subject: null,
+    style: null,
+    mood: null,
+    texture: null,
+    medium: null,
+    era: null,
+    styleRegister: null,
+    material: null,
+    density: null,
+    dim: null,
+    framing: null,
+    composition: null,
+    hue: null,
+    intensity: null,
+    color: null,
+    query: "",
+    sort: "newest",
+    basket: new Set(),
+  };
+
+  const byId = (id) => DATA.find(d => d.id === id);
+
+  function uniqueCounts(field) {
+    const counts = new Map();
+    DATA.forEach(d => {
+      const raw = d[field];
+      const vals = Array.isArray(raw) ? raw : [raw];
+      vals.forEach(v => {
+        if (v === null || v === undefined || v === "") return;
+        counts.set(v, (counts.get(v) || 0) + 1);
+      });
+    });
+    return [...counts.entries()].sort((a,b) => b[1]-a[1]);
+  }
+
+  function paletteColors() {
+    // Cluster the per-image average colors into a small representative swatch row.
+    const buckets = [
+      ["#1a1a1a", c => luma(c) < 45],
+      ["#e8e6df", c => luma(c) > 205],
+      ["#8a6a4a", c => isWarmMid(c)],
+      ["#c65840", c => hueBand(c, 350, 20)],
+      ["#3548d4", c => hueBand(c, 205, 255)],
+      ["#7a8f5e", c => hueBand(c, 70, 160)],
+      ["#c9a227", c => hueBand(c, 35, 65)],
+      ["#8f8a82", c => true],
+    ];
+    return buckets.map(b => b[0]);
+  }
+  function hexToRgb(hex) {
+    const n = parseInt(hex.slice(1), 16);
+    return [(n>>16)&255, (n>>8)&255, n&255];
+  }
+  function luma([r,g,b]) { return 0.2126*r+0.7152*g+0.0722*b; }
+  function rgbToHsl(r,g,b){
+    r/=255; g/=255; b/=255;
+    const max=Math.max(r,g,b), min=Math.min(r,g,b);
+    let h,s,l=(max+min)/2;
+    if(max===min){h=s=0;}
+    else{
+      const d=max-min;
+      s = l>0.5 ? d/(2-max-min) : d/(max+min);
+      switch(max){
+        case r: h=(g-b)/d+(g<b?6:0); break;
+        case g: h=(b-r)/d+2; break;
+        case b: h=(r-g)/d+4; break;
+      }
+      h/=6;
+    }
+    return [h*360, s, l];
+  }
+  function hueBand(hex, lo, hi) {
+    const [r,g,b] = hexToRgb(hex);
+    const [h,s,l] = rgbToHsl(r,g,b);
+    if (s < 0.12) return false;
+    if (lo <= hi) return h >= lo && h <= hi;
+    return h >= lo || h <= hi;
+  }
+  function isWarmMid(hex) {
+    const [r,g,b] = hexToRgb(hex);
+    const [h,s,l] = rgbToHsl(r,g,b);
+    return s > 0.1 && l > 0.25 && l < 0.65 && (h < 45 || h > 330);
+  }
+
+  function nearestSwatch(hex) {
+    const swatches = paletteColors();
+    const [r,g,b] = hexToRgb(hex);
+    let best = swatches[swatches.length-1], bestDist = Infinity;
+    swatches.forEach(s => {
+      const [sr,sg,sb] = hexToRgb(s);
+      const d = (r-sr)**2 + (g-sg)**2 + (b-sb)**2;
+      if (d < bestDist) { bestDist = d; best = s; }
+    });
+    return best;
+  }
+
+  function buildChipGroup(container, field, minCount) {
+    minCount = minCount || 1;
+    const multi = MULTI_FIELDS.has(field);
+    const entries = uniqueCounts(field).filter(([, count]) => count >= minCount);
+    container.innerHTML = "";
+    entries.forEach(([value, count]) => {
+      const el = document.createElement("button");
+      el.className = "chip" + (field === "channels" ? " channel-chip" : "");
+      el.dataset.value = value;
+      el.innerHTML = `<span class="chip-label">${escapeHtml(value)}</span><span class="count mono">${count}</span>`;
+      el.addEventListener("click", () => toggleFacet(field, value));
+      container.appendChild(el);
+    });
+  }
+
+  function toggleFacet(field, value) {
+    if (MULTI_FIELDS.has(field)) {
+      const set = state[field];
+      if (set.has(value)) set.delete(value); else set.add(value);
+    } else {
+      state[field] = state[field] === value ? null : value;
+    }
+    render();
+  }
+
+  function buildColorRow() {
+    const row = document.getElementById("colorRow");
+    row.innerHTML = "";
+    paletteColors().forEach(hex => {
+      const el = document.createElement("button");
+      el.className = "color-dot";
+      el.style.background = hex;
+      el.dataset.value = hex;
+      el.title = hex;
+      el.addEventListener("click", () => {
+        state.color = state.color === hex ? null : hex;
+        render();
+      });
+      row.appendChild(el);
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+
+  function matches(item) {
+    if (state.channels && !item.channels.includes(state.channels)) return false;
+    if (state.subject && !item.subject.includes(state.subject)) return false;
+    if (state.style && !item.style.includes(state.style)) return false;
+    if (state.mood && !item.mood.includes(state.mood)) return false;
+    if (state.texture && !(item.texture || []).includes(state.texture)) return false;
+    if (state.medium && item.medium !== state.medium) return false;
+    if (state.era && item.era !== state.era) return false;
+    if (state.styleRegister && item.styleRegister !== state.styleRegister) return false;
+    if (state.material && item.material !== state.material) return false;
+    if (state.density && item.density !== state.density) return false;
+    if (state.dim && item.dim !== state.dim) return false;
+    if (state.framing && item.framing !== state.framing) return false;
+    if (state.composition && item.composition !== state.composition) return false;
+    if (state.hue && item.hue !== state.hue) return false;
+    if (state.intensity && item.intensity !== state.intensity) return false;
+    if (state.color && nearestSwatch(item.color) !== state.color) return false;
+    if (state.query) {
+      const hay = [item.title, ...item.subject, ...item.style, ...item.mood, ...item.channels,
+        ...(item.texture || []), item.medium, item.era, item.styleRegister, item.material,
+        item.density, item.dim, item.framing, item.composition]
+        .filter(Boolean).join(" ").toLowerCase();
+      if (!hay.includes(state.query.toLowerCase())) return false;
+    }
+    return true;
+  }
+
+  let shuffleSeed = null;
+  function seededShuffle(arr) {
+    if (shuffleSeed === null) shuffleSeed = Math.floor(Math.random() * 1e9) || 1;
+    let s = shuffleSeed;
+    const rnd = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+    const copy = [...arr];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(rnd() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  function sortItems(items) {
+    const arr = [...items];
+    if (state.sort === "newest") arr.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+    else if (state.sort === "oldest") arr.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+    else if (state.sort === "channel") arr.sort((a,b) => a.channels[0].localeCompare(b.channels[0]));
+    else if (state.sort === "random") return seededShuffle(arr);
+    return arr;
+  }
+
+  const CHIP_GROUPS = [
+    ["channelChips", "channels"],
+    ["subjectChips", "subject"],
+    ["styleChips", "style"],
+    ["moodChips", "mood"],
+    ["mediumChips", "medium"],
+    ["eraChips", "era"],
+    ["styleRegisterChips", "styleRegister"],
+    ["materialChips", "material"],
+    ["densityChips", "density"],
+    ["textureChips", "texture"],
+    ["dimChips", "dim"],
+    ["framingChips", "framing"],
+    ["compositionChips", "composition"],
+    ["hueChips", "hue"],
+    ["intensityChips", "intensity"],
+  ];
+
+  function renderChipsActiveState() {
+    CHIP_GROUPS.forEach(([containerId, field]) => {
+      const multi = MULTI_FIELDS.has(field);
+      document.querySelectorAll(`#${containerId} .chip`).forEach(el => {
+        el.dataset.active = multi
+          ? (state[field].has(el.dataset.value) ? "true" : "false")
+          : (state[field] === el.dataset.value ? "true" : "false");
+      });
+    });
+    document.querySelectorAll("#colorRow .color-dot").forEach(el => {
+      el.dataset.active = state.color === el.dataset.value ? "true" : "false";
+    });
+  }
+
+  function render() {
+    const filtered = DATA.filter(matches);
+    const sorted = sortItems(filtered);
+    const grid = document.getElementById("grid");
+    grid.innerHTML = "";
+    if (sorted.length === 0) {
+      grid.innerHTML = `<div class="empty-state"><div class="big">Nothing matches</div>Try clearing a filter or two.</div>`;
+    } else {
+      sorted.forEach(item => grid.appendChild(renderCard(item)));
+    }
+    document.getElementById("resultCount").textContent = `${sorted.length} of ${DATA.length} images`;
+    renderChipsActiveState();
+    renderBasketCount();
+  }
+
+  function renderCard(item) {
+    const card = document.createElement("div");
+    card.className = "card";
+    const inBasket = state.basket.has(item.id);
+    card.innerHTML = `
+      <div class="card-img-wrap">
+        <img src="${item.thumb_url}" loading="lazy" alt="${escapeHtml(item.title)}" />
+        <button class="card-add" data-active="${inBasket}" aria-label="Add to moodboard">${inBasket ? "&#10003;" : "+"}</button>
+        <span class="card-color" style="background:${item.color}"></span>
+      </div>
+    `;
+    card.querySelector(".card-add").addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleBasket(item.id);
+      card.querySelector(".card-add").dataset.active = state.basket.has(item.id);
+      card.querySelector(".card-add").innerHTML = state.basket.has(item.id) ? "&#10003;" : "+";
+    });
+    card.addEventListener("click", () => openLightbox(item));
+    return card;
+  }
+
+  function toggleBasket(id) {
+    if (state.basket.has(id)) { state.basket.delete(id); }
+    else { state.basket.add(id); showToast("Added to moodboard"); }
+    renderBasketCount();
+    renderDrawer();
+  }
+
+  function renderBasketCount() {
+    document.getElementById("exportBtn").disabled = state.basket.size === 0;
+    renderBar();
+  }
+
+  function renderBar() {
+    document.getElementById("barCount").textContent = state.basket.size;
+    const thumbs = document.getElementById("barThumbs");
+    thumbs.innerHTML = "";
+    [...state.basket].forEach(id => {
+      const item = byId(id);
+      if (!item) return;
+      const img = document.createElement("img");
+      img.src = item.thumb_url;
+      img.alt = "";
+      thumbs.appendChild(img);
+    });
+  }
+
+  function renderDrawer() {
+    const list = document.getElementById("drawerList");
+    if (state.basket.size === 0) {
+      list.innerHTML = `<div class="drawer-empty">Nothing selected yet.<br/>Click the + on any image to add it here.</div>`;
+      return;
+    }
+    list.innerHTML = "";
+    [...state.basket].forEach(id => {
+      const item = byId(id);
+      if (!item) return;
+      const row = document.createElement("div");
+      row.className = "basket-item";
+      row.innerHTML = `
+        <img src="${item.thumb_url}" alt="" />
+        <div class="info">
+          <div class="t">${escapeHtml(item.title || item.channels.join(", "))}</div>
+          <span class="c mono">${item.channels.join(" · ")}</span>
+        </div>
+        <button aria-label="Remove">Remove</button>
+      `;
+      row.querySelector("button").addEventListener("click", () => {
+        state.basket.delete(id);
+        renderBasketCount();
+        renderDrawer();
+        render();
+      });
+      list.appendChild(row);
+    });
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.dataset.show = "true";
+    clearTimeout(showToast._h);
+    showToast._h = setTimeout(() => { t.dataset.show = "false"; }, 1600);
+  }
+
+  function openLightbox(item) {
+    document.getElementById("lightboxImg").src = item.image_url;
+    document.getElementById("lightboxImg").alt = item.title || "";
+    const meta = document.getElementById("lightboxMeta");
+    const date = item.created_at ? new Date(item.created_at).toLocaleDateString(undefined, {year:"numeric", month:"short", day:"numeric"}) : "";
+    meta.innerHTML = `
+      <h3>${escapeHtml(item.title || "Untitled")}</h3>
+      <div class="meta-row">
+        <span class="meta-label">Channel${item.channels.length > 1 ? "s" : ""}</span>
+        <div class="meta-tags">${item.channels.map(c => `<span>${escapeHtml(c)}</span>`).join("")}</div>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Subject</span>
+        <div class="meta-tags">${item.subject.map(s => `<span>${escapeHtml(s)}</span>`).join("")}</div>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Style</span>
+        <div class="meta-tags">${item.style.map(s => `<span>${escapeHtml(s)}</span>`).join("")}</div>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Mood</span>
+        <div class="meta-tags">${item.mood.map(s => `<span>${escapeHtml(s)}</span>`).join("")}</div>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Color · Added</span>
+        <div><span class="swatch-inline" style="background:${item.color}"></span>${item.color} &nbsp;·&nbsp; ${date}</div>
+      </div>
+      <a class="lightbox-source" href="${item.arena_url}" target="_blank" rel="noopener">View full-resolution image on are.na &rarr;</a>
+      ${item.source_url ? `<a class="lightbox-source" href="${item.source_url}" target="_blank" rel="noopener">${escapeHtml(item.source_url)}</a>` : ""}
+      <button class="btn-primary" id="lbAddBtn" style="margin-top:4px">${state.basket.has(item.id) ? "Remove from moodboard" : "Add to moodboard"}</button>
+    `;
+    document.getElementById("lbAddBtn").addEventListener("click", () => {
+      toggleBasket(item.id);
+      openLightbox(item);
+      render();
+    });
+    document.getElementById("lightbox").dataset.open = "true";
+  }
+
+  function closeLightbox() { document.getElementById("lightbox").dataset.open = "false"; }
+
+  function buildExportHtml() {
+    const items = [...state.basket].map(byId).filter(Boolean);
+    const rows = items.map(i => `
+      <tr>
+        <td style="padding:8px;border-bottom:1px solid #ddd;"><img src="${i.thumb_url}" width="90" style="display:block;border-radius:2px" /></td>
+        <td style="padding:8px;border-bottom:1px solid #ddd;font:13px sans-serif;">
+          <div style="font-weight:600;margin-bottom:3px;">${escapeHtml(i.title || "Untitled")}</div>
+          <div style="color:#666;margin-bottom:3px;">${i.channels.join(" · ")}</div>
+          <div style="color:#888;font-size:11px;">${[...i.subject, ...i.style, ...i.mood].join(", ")}</div>
+          <a href="${i.arena_url}" style="font-size:11px;word-break:break-all;">${i.arena_url}</a>
+        </td>
+      </tr>`).join("");
+    return `<!doctype html><html><head><meta charset="utf-8"><title>Moodboard export</title></head>
+      <body style="font-family:Verdana,sans-serif;max-width:720px;margin:30px auto;">
+      <h1 style="font-size:20px;">Moodboard — ${items.length} images</h1>
+      <p style="color:#666;font-size:13px;">Exported from Reference Bank. Thumbnails are hotlinked from are.na; each link opens the full-resolution original — click through or drag from there into Figma.</p>
+      <table style="border-collapse:collapse;width:100%;">${rows}</table>
+      </body></html>`;
+  }
+
+  function exportBasket() {
+    const html = buildExportHtml();
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "moodboard-export.html";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    showToast("Moodboard exported");
+  }
+
+  // ---- wiring ----
+  buildChipGroup(document.getElementById("channelChips"), "channels");
+  buildChipGroup(document.getElementById("subjectChips"), "subject", 2);
+  buildChipGroup(document.getElementById("styleChips"), "style", 2);
+  buildChipGroup(document.getElementById("moodChips"), "mood", 2);
+  buildChipGroup(document.getElementById("mediumChips"), "medium", 2);
+  buildChipGroup(document.getElementById("eraChips"), "era", 2);
+  buildChipGroup(document.getElementById("styleRegisterChips"), "styleRegister", 2);
+  buildChipGroup(document.getElementById("materialChips"), "material", 2);
+  buildChipGroup(document.getElementById("densityChips"), "density", 2);
+  buildChipGroup(document.getElementById("textureChips"), "texture", 2);
+  buildChipGroup(document.getElementById("dimChips"), "dim", 2);
+  buildChipGroup(document.getElementById("framingChips"), "framing", 2);
+  buildChipGroup(document.getElementById("compositionChips"), "composition", 2);
+  buildChipGroup(document.getElementById("hueChips"), "hue", 2);
+  buildChipGroup(document.getElementById("intensityChips"), "intensity", 2);
+  buildColorRow();
+
+  document.getElementById("searchInput").addEventListener("input", (e) => { state.query = e.target.value; render(); });
+  document.getElementById("sortSelect").addEventListener("change", (e) => { state.sort = e.target.value; render(); });
+  document.getElementById("shuffleBtn").addEventListener("click", () => {
+    state.sort = "random";
+    render();
+  });
+  document.getElementById("clearFilters").addEventListener("click", () => {
+    state.channels = null;
+    state.subject = null; state.style = null; state.mood = null; state.texture = null;
+    state.medium = null; state.era = null; state.styleRegister = null; state.material = null;
+    state.density = null; state.dim = null; state.framing = null; state.composition = null;
+    state.hue = null; state.intensity = null;
+    state.color = null; state.query = "";
+    document.getElementById("searchInput").value = "";
+    render();
+  });
+  document.getElementById("sidebarToggle").addEventListener("click", () => {
+    const shell = document.getElementById("shell");
+    const collapsed = shell.dataset.sidebar === "collapsed";
+    shell.dataset.sidebar = collapsed ? "expanded" : "collapsed";
+    document.getElementById("sidebarToggle").innerHTML = collapsed ? "&laquo;" : "&raquo;";
+  });
+  document.getElementById("moodboardBar").addEventListener("click", () => {
+    document.getElementById("drawer").dataset.open = "true";
+    document.getElementById("scrim").dataset.open = "true";
+    renderDrawer();
+  });
+  function closeDrawer() {
+    document.getElementById("drawer").dataset.open = "false";
+    document.getElementById("scrim").dataset.open = "false";
+  }
+  document.getElementById("closeBasket").addEventListener("click", closeDrawer);
+  document.getElementById("scrim").addEventListener("click", () => { closeDrawer(); closeLightbox(); });
+  document.getElementById("clearBasket").addEventListener("click", () => {
+    state.basket.clear(); renderBasketCount(); renderDrawer(); render();
+  });
+  document.getElementById("exportBtn").addEventListener("click", exportBasket);
+  document.getElementById("lightboxClose").addEventListener("click", closeLightbox);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") { closeLightbox(); closeDrawer(); } });
+
+  render();
+</script>
+</body>
+</html>
