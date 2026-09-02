@@ -1006,7 +1006,7 @@
     const inBasket = state.basket.has(item.id);
     card.innerHTML = `
       <div class="card-img-wrap">
-        <img src="${item.thumb_url}" loading="lazy" alt="${escapeHtml(item.title)}" />
+        <img src="${item.grid_url}" loading="lazy" alt="${escapeHtml(item.title)}" />
         <button class="card-add" data-active="${inBasket}" aria-label="Add to moodboard">${inBasket ? "&#10003;" : "+"}</button>
         <span class="card-color" style="background:${item.color}"></span>
       </div>
